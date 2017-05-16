@@ -355,12 +355,22 @@ module Eventful
       # Raise an exception if we didn't get a 2xx response code
       response.value
 
-      yaml = YAML::load response.body.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
+      if @root == DEFAULT_ROOT
+        yaml = YAML::load response.body.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
 
-      # Raise an error if we got an API error
-      raise APIError.new(yaml['error']) if yaml['error']
+        # Raise an error if we got an API error
+        raise APIError.new(yaml['error']) if yaml['error']
 
-      return yaml
+        return yaml
+      elsif @root == "/json/"
+        begin
+          json = JSON.parse response.body
+        rescue => e
+          raise APIError.new({string: "JSON parse error", description: e.message})
+        end
+
+        return json
+      end
     end
 
 
